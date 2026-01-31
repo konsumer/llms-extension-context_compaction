@@ -28,7 +28,7 @@ Perfect for:
 **For Ollama users with 8GB GPU:**
 ```bash
 # Install extension
-llms --add konsumer/llms-extension-context_compaction
+llms --add konsumer/context_compaction
 
 # Use Ollama preset
 cp ~/.llms/extensions/context_compaction/presets/ollama-8gb.json \
@@ -44,7 +44,7 @@ llms serve
 **For OpenAI API users:**
 ```bash
 # Install extension
-llms --add konsumer/llms-extension-context_compaction
+llms --add konsumer/context_compaction
 
 # Use OpenAI preset
 cp ~/.llms/extensions/context_compaction/presets/openai.json \
@@ -57,13 +57,13 @@ llms serve
 ### From GitHub
 
 ```bash
-llms --add konsumer/llms-extension-context_compaction
+llms --add konsumer/context_compaction
 ```
 
 Or if you've cloned the repository:
 
 ```bash
-llms --add /path/to/llms-extension-context_compaction
+llms --add /path/to/context_compaction
 ```
 
 ### Manual Installation
@@ -71,7 +71,7 @@ llms --add /path/to/llms-extension-context_compaction
 1. Copy this extension to your llms extensions directory:
 ```bash
 mkdir -p ~/.llms/extensions
-cp -r /path/to/llms-extension-context_compaction ~/.llms/extensions/context_compaction
+cp -r /path/to/context_compaction ~/.llms/extensions/context_compaction
 ```
 
 2. (Optional) Use a preset configuration:
@@ -275,7 +275,7 @@ curl -X POST http://localhost:8000/ext/context_compaction/config \
 
 ## Contributing
 
-Issues and pull requests welcome at: https://github.com/konsumer/llms-extension-context_compaction
+Issues and pull requests welcome at: https://github.com/konsumer/context_compaction
 
 ## License
 
