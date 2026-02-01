@@ -1,10 +1,10 @@
 """
 LLMS extension for context compaction via /compact command.
+Uses llms.py's native API to call configured LLMs.
 """
 
 import json
 from pathlib import Path
-import aiohttp
 
 def __install__(ctx):
     """
@@ -22,6 +22,9 @@ def __install__(ctx):
     provider = config.get('provider', 'ollama')
     model = config.get('model', 'qwen2.5:7b')
     summary_prompt = config.get('summary_prompt', 'Summarize this conversation concisely.')
+
+    # Format the full model name as provider/model for llms.py
+    full_model = f"{provider}/{model}" if provider else model
 
     # Store compact boundaries per thread
     compact_boundaries = {}
@@ -44,11 +47,11 @@ def __install__(ctx):
 
         # Check if this is a /compact command
         if text_content and text_content.strip().startswith('/compact'):
-            await handle_compact(chat, context, thread_id, provider, model, summary_prompt, ctx)
+            await handle_compact(chat, context, thread_id, full_model, summary_prompt, ctx)
         elif thread_id in compact_boundaries:
             apply_compaction(chat, thread_id, ctx)
 
-    async def handle_compact(chat, context, thread_id, provider, model, summary_prompt, ctx):
+    async def handle_compact(chat, context, thread_id, full_model, summary_prompt, ctx):
         """Handle the /compact command."""
 
         ctx.log(f"[context_compaction] ✓ /compact command (thread: {thread_id})")
@@ -65,8 +68,8 @@ def __install__(ctx):
         pre_tokens = estimate_tokens(messages_to_compact)
         conversation_text = build_text(messages_to_compact)
 
-        # Generate summary
-        summary = await generate_summary(conversation_text, provider, model, summary_prompt, ctx)
+        # Generate summary using llms.py's chat_completion API
+        summary = await generate_summary(conversation_text, full_model, summary_prompt, ctx)
 
         if not summary:
             ctx.log(f"[context_compaction] Failed to generate summary")
@@ -163,40 +166,31 @@ def __install__(ctx):
             total += len(str(content))
         return total // 4
 
-    async def generate_summary(conversation_text, provider, model, prompt, ctx):
-        """Generate summary using configured LLM."""
+    async def generate_summary(conversation_text, full_model, prompt, ctx):
+        """
+        Generate summary using llms.py's chat_completion API.
+        This uses whatever provider/model is configured in llms.py.
+        """
         try:
-            if provider == 'ollama':
-                api_url = "http://localhost:11434/v1/chat/completions"
+            # Create a chat request using llms.py's API
+            summary_chat = ctx.chat_request(
+                model=full_model,
+                system_prompt=prompt,
+                text=conversation_text
+            )
+
+            ctx.log(f"[context_compaction] Calling LLM: {full_model}")
+
+            # Use llms.py's chat_completion to call the configured LLM
+            response = await ctx.chat_completion(summary_chat)
+
+            # Extract the summary from the response
+            if response and 'choices' in response and len(response['choices']) > 0:
+                summary = response['choices'][0]['message']['content']
+                return summary.strip()
             else:
-                ctx.log(f"[context_compaction] Unsupported provider: {provider}")
+                ctx.log(f"[context_compaction] Unexpected response format")
                 return None
-
-            payload = {
-                "model": model,
-                "messages": [
-                    {"role": "system", "content": prompt},
-                    {"role": "user", "content": conversation_text}
-                ],
-                "stream": False
-            }
-
-            ctx.log(f"[context_compaction] Calling {provider}/{model}")
-
-            async with aiohttp.ClientSession() as session:
-                async with session.post(api_url, json=payload) as response:
-                    if response.status != 200:
-                        error = await response.text()
-                        ctx.log(f"[context_compaction] API error {response.status}: {error}")
-                        return None
-
-                    result = await response.json()
-
-                    if 'choices' in result and len(result['choices']) > 0:
-                        return result['choices'][0]['message']['content'].strip()
-                    else:
-                        ctx.log(f"[context_compaction] Unexpected response format")
-                        return None
 
         except Exception as e:
             ctx.log(f"[context_compaction] Error: {e}")

@@ -1,5 +1,5 @@
 {
   "provider": "ollama",
-  "model": "qwen2.5:7b",
+  "model": "mistral:7b",
   "summary_prompt": "Create a comprehensive summary of this conversation. Focus on:\n\n- What was discussed or accomplished\n- Current state of the work/story/discussion\n- Key facts, decisions, and details\n- Important context needed to continue\n\nFor stories: Summarize plot events, characters, and current narrative state.\nFor technical discussions: Summarize code changes, decisions, files involved, and next steps.\n\nBe factual and comprehensive. Do NOT ask questions or make suggestions."
 }
